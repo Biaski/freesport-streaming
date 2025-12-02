@@ -168,7 +168,7 @@ const Index = () => {
       embedUrl = `https://ok.ru/videoembed/${videoId}?autoplay=1`;
     } else if (newStreamUrl.includes('kick.com/')) {
       const channelName = newStreamUrl.split('kick.com/')[1]?.split('?')[0].split('/')[0];
-      embedUrl = `https://player.kick.com/${channelName}?autoplay=true&muted=false`;
+      embedUrl = `https://player.kick.com/${channelName}?autoplay=true&muted=false&quality=source`;
     }
 
     try {
@@ -191,6 +191,10 @@ const Index = () => {
       
       const data = await response.json();
       setCurrentStream(data.stream);
+      
+      setNewStreamTitle(data.stream.title);
+      setNewStreamSport(data.stream.sport || '');
+      
       toast({ title: 'Успешно', description: 'Трансляция обновлена' });
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить трансляцию', variant: 'destructive' });
