@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "Get current stream",
+      "method": "GET",
+      "path": "/?resource=stream",
+      "expectedStatus": 200,
+      "bodyMatcher": "any"
+    },
+    {
+      "name": "Get schedule events",
+      "method": "GET",
+      "path": "/?resource=schedule",
+      "expectedStatus": 200,
+      "bodyMatcher": "any"
+    },
+    {
+      "name": "Get news posts",
+      "method": "GET",
+      "path": "/?resource=news",
+      "expectedStatus": 200,
+      "bodyMatcher": "any"
+    }
+  ]
+}

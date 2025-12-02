@@ -1,103 +1,230 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+const API_URL = 'https://functions.poehali.dev/b726b831-4bec-45c4-86a0-702fb2ab6218';
 
 interface Stream {
-  id: string;
+  id: number;
   title: string;
   url: string;
-  isLive: boolean;
+  is_live: boolean;
+  sport?: string;
 }
 
 interface ScheduleEvent {
-  id: string;
+  id: number;
   title: string;
-  date: string;
-  time: string;
+  event_date: string;
+  event_time: string;
   sport: string;
+  description?: string;
 }
 
 interface NewsPost {
-  id: string;
+  id: number;
   title: string;
   content: string;
-  image: string;
-  date: string;
+  image_url: string;
+  published_at: string;
 }
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'stream' | 'schedule' | 'news'>('stream');
-  const [streamUrl, setStreamUrl] = useState('');
-  const [currentStream, setCurrentStream] = useState<Stream>({
-    id: '1',
-    title: 'Прямая трансляция',
-    url: 'https://www.youtube.com/embed/jfKfPfyJRdk',
-    isLive: true
-  });
+  const [activeTab, setActiveTab] = useState<'stream' | 'schedule' | 'news' | 'admin'>('stream');
+  const [currentStream, setCurrentStream] = useState<Stream | null>(null);
+  const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
+  const { toast } = useToast();
 
-  const scheduleEvents: ScheduleEvent[] = [
-    {
-      id: '1',
-      title: 'Чемпионат мира - Спринт 10км',
-      date: '15 декабря',
-      time: '14:00 МСК',
-      sport: 'Биатлон'
-    },
-    {
-      id: '2',
-      title: 'Кубок мира - Масс-старт 15км',
-      date: '17 декабря',
-      time: '16:30 МСК',
-      sport: 'Лыжные гонки'
-    },
-    {
-      id: '3',
-      title: 'Индивидуальная гонка 20км',
-      date: '20 декабря',
-      time: '13:00 МСК',
-      sport: 'Биатлон'
-    }
-  ];
+  const [newStreamUrl, setNewStreamUrl] = useState('');
+  const [newStreamTitle, setNewStreamTitle] = useState('');
+  const [newStreamSport, setNewStreamSport] = useState('');
 
-  const newsPosts: NewsPost[] = [
-    {
-      id: '1',
-      title: 'Победа сборной на этапе Кубка мира',
-      content: 'Невероятная гонка завершилась триумфом наших спортсменов. Золото, серебро и бронза остались в команде после напряженной борьбы на дистанции.',
-      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&h=600&fit=crop',
-      date: '1 декабря 2024'
-    },
-    {
-      id: '2',
-      title: 'Подготовка к чемпионату в разгаре',
-      content: 'Команда провела интенсивные тренировки на высокогорном полигоне. Спортсмены показывают отличные результаты и готовы к предстоящим стартам.',
-      image: 'https://images.unsplash.com/photo-1483654363497-b5ebce41bfdb?w=800&h=600&fit=crop',
-      date: '28 ноября 2024'
-    }
-  ];
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTime, setNewEventTime] = useState('');
+  const [newEventSport, setNewEventSport] = useState('');
+  const [newEventDesc, setNewEventDesc] = useState('');
 
-  const handleStreamUpdate = () => {
-    if (streamUrl.trim()) {
-      let embedUrl = streamUrl;
-      
-      if (streamUrl.includes('youtube.com/watch')) {
-        const videoId = streamUrl.split('v=')[1]?.split('&')[0];
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      } else if (streamUrl.includes('youtu.be/')) {
-        const videoId = streamUrl.split('youtu.be/')[1]?.split('?')[0];
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostImage, setNewPostImage] = useState('');
+
+  useEffect(() => {
+    loadStream();
+    loadSchedule();
+    loadNews();
+    
+    const interval = setInterval(() => {
+      loadStream();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadStream = async () => {
+    try {
+      const response = await fetch(`${API_URL}?resource=stream`);
+      const data = await response.json();
+      if (data.stream) {
+        setCurrentStream(data.stream);
       }
-      
-      setCurrentStream({
-        ...currentStream,
-        url: embedUrl
-      });
-      setStreamUrl('');
+    } catch (error) {
+      console.error('Ошибка загрузки трансляции:', error);
     }
+  };
+
+  const loadSchedule = async () => {
+    try {
+      const response = await fetch(`${API_URL}?resource=schedule`);
+      const data = await response.json();
+      setScheduleEvents(data.events || []);
+    } catch (error) {
+      console.error('Ошибка загрузки расписания:', error);
+    }
+  };
+
+  const loadNews = async () => {
+    try {
+      const response = await fetch(`${API_URL}?resource=news`);
+      const data = await response.json();
+      setNewsPosts(data.news || []);
+    } catch (error) {
+      console.error('Ошибка загрузки новостей:', error);
+    }
+  };
+
+  const updateStream = async () => {
+    if (!newStreamUrl.trim()) {
+      toast({ title: 'Ошибка', description: 'Введите URL трансляции', variant: 'destructive' });
+      return;
+    }
+
+    let embedUrl = newStreamUrl;
+    
+    if (newStreamUrl.includes('youtube.com/watch')) {
+      const videoId = newStreamUrl.split('v=')[1]?.split('&')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (newStreamUrl.includes('youtu.be/')) {
+      const videoId = newStreamUrl.split('youtu.be/')[1]?.split('?')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}?resource=stream`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: embedUrl,
+          title: newStreamTitle || 'Прямая трансляция',
+          sport: newStreamSport || 'Биатлон',
+          is_live: true
+        })
+      });
+      
+      const data = await response.json();
+      setCurrentStream(data.stream);
+      setNewStreamUrl('');
+      setNewStreamTitle('');
+      setNewStreamSport('');
+      toast({ title: 'Успешно', description: 'Трансляция обновлена' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось обновить трансляцию', variant: 'destructive' });
+    }
+  };
+
+  const addScheduleEvent = async () => {
+    if (!newEventTitle || !newEventDate || !newEventTime || !newEventSport) {
+      toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await fetch(`${API_URL}?resource=schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newEventTitle,
+          event_date: newEventDate,
+          event_time: newEventTime,
+          sport: newEventSport,
+          description: newEventDesc
+        })
+      });
+      
+      await loadSchedule();
+      setNewEventTitle('');
+      setNewEventDate('');
+      setNewEventTime('');
+      setNewEventSport('');
+      setNewEventDesc('');
+      toast({ title: 'Успешно', description: 'Событие добавлено' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось добавить событие', variant: 'destructive' });
+    }
+  };
+
+  const deleteScheduleEvent = async (id: number) => {
+    try {
+      await fetch(`${API_URL}?resource=schedule&id=${id}`, { method: 'DELETE' });
+      await loadSchedule();
+      toast({ title: 'Успешно', description: 'Событие удалено' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить событие', variant: 'destructive' });
+    }
+  };
+
+  const addNewsPost = async () => {
+    if (!newPostTitle || !newPostContent) {
+      toast({ title: 'Ошибка', description: 'Заполните заголовок и текст', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await fetch(`${API_URL}?resource=news`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newPostTitle,
+          content: newPostContent,
+          image_url: newPostImage || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&h=600&fit=crop'
+        })
+      });
+      
+      await loadNews();
+      setNewPostTitle('');
+      setNewPostContent('');
+      setNewPostImage('');
+      toast({ title: 'Успешно', description: 'Новость опубликована' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось опубликовать новость', variant: 'destructive' });
+    }
+  };
+
+  const deleteNewsPost = async (id: number) => {
+    try {
+      await fetch(`${API_URL}?resource=news&id=${id}`, { method: 'DELETE' });
+      await loadNews();
+      toast({ title: 'Успешно', description: 'Новость удалена' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить новость', variant: 'destructive' });
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   return (
@@ -134,21 +261,45 @@ const Index = () => {
             >
               Новости
             </button>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`font-medium transition-colors ${
+                activeTab === 'admin' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name="Settings" size={18} className="inline mr-1" />
+              Админка
+            </button>
           </nav>
 
           <div className="md:hidden">
-            <Button variant="ghost" size="icon">
-              <Icon name="Menu" size={24} />
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Icon name="Menu" size={24} />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Меню</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-4 mt-4">
+                  <Button variant="ghost" onClick={() => setActiveTab('stream')}>Трансляция</Button>
+                  <Button variant="ghost" onClick={() => setActiveTab('schedule')}>Расписание</Button>
+                  <Button variant="ghost" onClick={() => setActiveTab('news')}>Новости</Button>
+                  <Button variant="ghost" onClick={() => setActiveTab('admin')}>Админка</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {activeTab === 'stream' && (
+        {activeTab === 'stream' && currentStream && (
           <div className="space-y-8 animate-fade-in">
             <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-              {currentStream.isLive && (
+              {currentStream.is_live && (
                 <Badge className="absolute top-4 left-4 z-10 bg-red-600 hover:bg-red-600">
                   <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
                   LIVE
@@ -164,26 +315,14 @@ const Index = () => {
             </div>
 
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Панель администратора</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Вставьте ссылку на видеопоток с YouTube, Twitch или прямую ссылку на .m3u8
-                  </p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="https://youtube.com/watch?v=..."
-                    value={streamUrl}
-                    onChange={(e) => setStreamUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleStreamUpdate()}
-                  />
-                  <Button onClick={handleStreamUpdate}>
-                    <Icon name="Play" size={18} className="mr-2" />
-                    Обновить
-                  </Button>
-                </div>
+              <CardContent className="pt-6">
+                <h2 className="text-2xl font-bold mb-2">{currentStream.title}</h2>
+                {currentStream.sport && (
+                  <Badge variant="outline" className="mb-4">{currentStream.sport}</Badge>
+                )}
+                <p className="text-muted-foreground">
+                  Прямая трансляция обновляется автоматически каждые 30 секунд
+                </p>
               </CardContent>
             </Card>
 
@@ -228,16 +367,19 @@ const Index = () => {
                         <Badge variant="outline">{event.sport}</Badge>
                       </div>
                       <h3 className="text-xl font-semibold mb-1">{event.title}</h3>
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground">{event.description}</p>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <Icon name="Calendar" size={18} className="text-muted-foreground" />
-                        <span>{event.date}</span>
+                        <span>{formatDate(event.event_date)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Icon name="Clock" size={18} className="text-muted-foreground" />
-                        <span>{event.time}</span>
+                        <span>{event.event_time.substring(0, 5)} МСК</span>
                       </div>
                     </div>
                   </div>
@@ -257,7 +399,7 @@ const Index = () => {
                   <div className="grid md:grid-cols-5 gap-6">
                     <div className="md:col-span-2">
                       <img
-                        src={post.image}
+                        src={post.image_url}
                         alt={post.title}
                         className="w-full h-64 md:h-full object-cover"
                       />
@@ -266,7 +408,7 @@ const Index = () => {
                     <CardContent className="md:col-span-3 pt-6">
                       <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
                         <Icon name="Calendar" size={16} />
-                        <span>{post.date}</span>
+                        <span>{formatDateTime(post.published_at)}</span>
                       </div>
                       
                       <h3 className="text-2xl font-bold mb-4">{post.title}</h3>
@@ -276,19 +418,159 @@ const Index = () => {
                 </Card>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'admin' && (
+          <div className="space-y-8 animate-fade-in">
+            <h2 className="text-3xl font-bold mb-6">Панель администратора</h2>
 
             <Card>
               <CardContent className="pt-6 space-y-4">
-                <h3 className="text-xl font-semibold">Добавить новость</h3>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <Icon name="Radio" size={20} />
+                  Обновить трансляцию
+                </h3>
+                <Input
+                  placeholder="Название трансляции"
+                  value={newStreamTitle}
+                  onChange={(e) => setNewStreamTitle(e.target.value)}
+                />
+                <Input
+                  placeholder="URL трансляции (YouTube, Twitch, .m3u8)"
+                  value={newStreamUrl}
+                  onChange={(e) => setNewStreamUrl(e.target.value)}
+                />
+                <Input
+                  placeholder="Вид спорта"
+                  value={newStreamSport}
+                  onChange={(e) => setNewStreamSport(e.target.value)}
+                />
+                <Button onClick={updateStream} className="w-full">
+                  <Icon name="Play" size={18} className="mr-2" />
+                  Обновить трансляцию
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <Icon name="Calendar" size={20} />
+                    Управление расписанием
+                  </h3>
+                </div>
                 
                 <div className="space-y-3">
-                  <Input placeholder="Заголовок новости" />
-                  <Input placeholder="Ссылка на изображение" />
-                  <Textarea placeholder="Текст новости" rows={4} />
-                  <Button className="w-full md:w-auto">
+                  <Input
+                    placeholder="Название события"
+                    value={newEventTitle}
+                    onChange={(e) => setNewEventTitle(e.target.value)}
+                  />
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <Input
+                      type="date"
+                      value={newEventDate}
+                      onChange={(e) => setNewEventDate(e.target.value)}
+                    />
+                    <Input
+                      type="time"
+                      value={newEventTime}
+                      onChange={(e) => setNewEventTime(e.target.value)}
+                    />
+                  </div>
+                  <Input
+                    placeholder="Вид спорта"
+                    value={newEventSport}
+                    onChange={(e) => setNewEventSport(e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Описание (необязательно)"
+                    value={newEventDesc}
+                    onChange={(e) => setNewEventDesc(e.target.value)}
+                    rows={2}
+                  />
+                  <Button onClick={addScheduleEvent} className="w-full">
                     <Icon name="Plus" size={18} className="mr-2" />
-                    Опубликовать
+                    Добавить событие
                   </Button>
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <h4 className="font-semibold mb-3">Текущие события:</h4>
+                  {scheduleEvents.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{event.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(event.event_date)} в {event.event_time.substring(0, 5)}
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteScheduleEvent(event.id)}
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <Icon name="Newspaper" size={20} />
+                    Управление новостями
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Заголовок новости"
+                    value={newPostTitle}
+                    onChange={(e) => setNewPostTitle(e.target.value)}
+                  />
+                  <Input
+                    placeholder="URL изображения"
+                    value={newPostImage}
+                    onChange={(e) => setNewPostImage(e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Текст новости"
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    rows={4}
+                  />
+                  <Button onClick={addNewsPost} className="w-full">
+                    <Icon name="Plus" size={18} className="mr-2" />
+                    Опубликовать новость
+                  </Button>
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <h4 className="font-semibold mb-3">Опубликованные новости:</h4>
+                  {newsPosts.map((post) => (
+                    <div key={post.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{post.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDateTime(post.published_at)}
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteNewsPost(post.id)}
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
