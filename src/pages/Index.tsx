@@ -143,19 +143,32 @@ const Index = () => {
 
     let embedUrl = newStreamUrl;
     
-    if (newStreamUrl.includes('youtube.com/watch')) {
-      const videoId = newStreamUrl.split('v=')[1]?.split('&')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&autoplay=1&mute=1&controls=1`;
+    if (newStreamUrl.includes('youtube.com/watch') || newStreamUrl.includes('youtube.com/live')) {
+      const videoId = newStreamUrl.includes('live/') 
+        ? newStreamUrl.split('live/')[1]?.split('?')[0]
+        : newStreamUrl.split('v=')[1]?.split('&')[0];
+      embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&iv_load_policy=3&disablekb=1`;
     } else if (newStreamUrl.includes('youtu.be/')) {
       const videoId = newStreamUrl.split('youtu.be/')[1]?.split('?')[0];
-      embedUrl = `https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&fs=1&autoplay=1&mute=1&controls=1`;
+      embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0&showinfo=0&fs=1&iv_load_policy=3&disablekb=1`;
     } else if (newStreamUrl.includes('twitch.tv/')) {
       const channelName = newStreamUrl.split('twitch.tv/')[1]?.split('?')[0].split('/')[0];
-      embedUrl = `https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&muted=false&autoplay=true`;
+      embedUrl = `https://player.twitch.tv/?channel=${channelName}&parent=${window.location.hostname}&autoplay=true&muted=false`;
     } else if (newStreamUrl.includes('player.twitch.tv')) {
       if (!newStreamUrl.includes('parent=')) {
-        embedUrl = `${newStreamUrl}${newStreamUrl.includes('?') ? '&' : '?'}parent=${window.location.hostname}&muted=false&autoplay=true`;
+        embedUrl = `${newStreamUrl}${newStreamUrl.includes('?') ? '&' : '?'}parent=${window.location.hostname}&autoplay=true&muted=false`;
       }
+    } else if (newStreamUrl.includes('vk.com/video') || newStreamUrl.includes('vk.ru/video')) {
+      const videoMatch = newStreamUrl.match(/video(-?\d+_\d+)/);
+      if (videoMatch) {
+        embedUrl = `https://vk.com/video_ext.php?oid=${videoMatch[1].split('_')[0]}&id=${videoMatch[1].split('_')[1]}&hd=2&autoplay=1`;
+      }
+    } else if (newStreamUrl.includes('ok.ru/video') || newStreamUrl.includes('ok.ru/live')) {
+      const videoId = newStreamUrl.split('/').pop()?.split('?')[0];
+      embedUrl = `https://ok.ru/videoembed/${videoId}?autoplay=1`;
+    } else if (newStreamUrl.includes('kick.com/')) {
+      const channelName = newStreamUrl.split('kick.com/')[1]?.split('?')[0].split('/')[0];
+      embedUrl = `https://player.kick.com/${channelName}?autoplay=true&muted=false`;
     }
 
     try {
@@ -389,7 +402,18 @@ const Index = () => {
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                sandbox="allow-same-origin allow-scripts allow-presentation allow-forms"
+                referrerPolicy="no-referrer"
+                style={{ pointerEvents: 'auto' }}
               ></iframe>
+              <style dangerouslySetInnerHTML={{__html: `
+                iframe {
+                  pointer-events: auto !important;
+                }
+                iframe a {
+                  pointer-events: none !important;
+                }
+              `}} />
             </div>
 
             <Card>
@@ -547,10 +571,13 @@ const Index = () => {
                   onChange={(e) => setNewStreamTitle(e.target.value)}
                 />
                 <Input
-                  placeholder="URL трансляции (YouTube, Twitch, .m3u8)"
+                  placeholder="URL трансляции (YouTube, Twitch, VK Video, OK.ru, Kick)"
                   value={newStreamUrl}
                   onChange={(e) => setNewStreamUrl(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Поддерживаются: YouTube, Twitch, VK Video, Одноклассники, Kick
+                </p>
                 <Input
                   placeholder="Вид спорта"
                   value={newStreamSport}
