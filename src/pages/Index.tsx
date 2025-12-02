@@ -56,6 +56,9 @@ const Index = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+
   useEffect(() => {
     loadStream();
     loadSchedule();
@@ -100,6 +103,38 @@ const Index = () => {
     }
   };
 
+  const getAuthHeaders = () => {
+    const password = localStorage.getItem('admin_password');
+    return {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': password || ''
+    };
+  };
+
+  const handleLogin = () => {
+    if (!passwordInput.trim()) {
+      toast({ title: 'Ошибка', description: 'Введите пароль', variant: 'destructive' });
+      return;
+    }
+    localStorage.setItem('admin_password', passwordInput);
+    setIsAuthenticated(true);
+    setPasswordInput('');
+    toast({ title: 'Успешно', description: 'Вы вошли в админ-панель' });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_password');
+    setIsAuthenticated(false);
+    toast({ title: 'Выход', description: 'Вы вышли из админ-панели' });
+  };
+
+  useEffect(() => {
+    const savedPassword = localStorage.getItem('admin_password');
+    if (savedPassword) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   const updateStream = async () => {
     if (!newStreamUrl.trim()) {
       toast({ title: 'Ошибка', description: 'Введите URL трансляции', variant: 'destructive' });
@@ -119,7 +154,7 @@ const Index = () => {
     try {
       const response = await fetch(`${API_URL}?resource=stream`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           url: embedUrl,
           title: newStreamTitle || 'Прямая трансляция',
@@ -127,6 +162,12 @@ const Index = () => {
           is_live: true
         })
       });
+      
+      if (response.status === 401) {
+        toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
+        handleLogout();
+        return;
+      }
       
       const data = await response.json();
       setCurrentStream(data.stream);
@@ -146,9 +187,9 @@ const Index = () => {
     }
 
     try {
-      await fetch(`${API_URL}?resource=schedule`, {
+      const response = await fetch(`${API_URL}?resource=schedule`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           title: newEventTitle,
           event_date: newEventDate,
@@ -157,6 +198,12 @@ const Index = () => {
           description: newEventDesc
         })
       });
+      
+      if (response.status === 401) {
+        toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
+        handleLogout();
+        return;
+      }
       
       await loadSchedule();
       setNewEventTitle('');
@@ -172,7 +219,16 @@ const Index = () => {
 
   const deleteScheduleEvent = async (id: number) => {
     try {
-      await fetch(`${API_URL}?resource=schedule&id=${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_URL}?resource=schedule&id=${id}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.status === 401) {
+        toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
+        handleLogout();
+        return;
+      }
       await loadSchedule();
       toast({ title: 'Успешно', description: 'Событие удалено' });
     } catch (error) {
@@ -187,15 +243,21 @@ const Index = () => {
     }
 
     try {
-      await fetch(`${API_URL}?resource=news`, {
+      const response = await fetch(`${API_URL}?resource=news`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           title: newPostTitle,
           content: newPostContent,
           image_url: newPostImage || 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800&h=600&fit=crop'
         })
       });
+      
+      if (response.status === 401) {
+        toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
+        handleLogout();
+        return;
+      }
       
       await loadNews();
       setNewPostTitle('');
@@ -209,7 +271,16 @@ const Index = () => {
 
   const deleteNewsPost = async (id: number) => {
     try {
-      await fetch(`${API_URL}?resource=news&id=${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_URL}?resource=news&id=${id}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      
+      if (response.status === 401) {
+        toast({ title: 'Ошибка', description: 'Неверный пароль', variant: 'destructive' });
+        handleLogout();
+        return;
+      }
       await loadNews();
       toast({ title: 'Успешно', description: 'Новость удалена' });
     } catch (error) {
@@ -421,9 +492,41 @@ const Index = () => {
           </div>
         )}
 
-        {activeTab === 'admin' && (
+        {activeTab === 'admin' && !isAuthenticated && (
           <div className="space-y-8 animate-fade-in">
-            <h2 className="text-3xl font-bold mb-6">Панель администратора</h2>
+            <h2 className="text-3xl font-bold mb-6">Вход в админ-панель</h2>
+            
+            <Card className="max-w-md mx-auto">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Lock" size={24} className="text-primary" />
+                  <h3 className="text-xl font-semibold">Введите пароль</h3>
+                </div>
+                <Input
+                  type="password"
+                  placeholder="Пароль администратора"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                />
+                <Button onClick={handleLogin} className="w-full">
+                  <Icon name="LogIn" size={18} className="mr-2" />
+                  Войти
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'admin' && isAuthenticated && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl font-bold">Панель администратора</h2>
+              <Button variant="outline" onClick={handleLogout}>
+                <Icon name="LogOut" size={18} className="mr-2" />
+                Выйти
+              </Button>
+            </div>
 
             <Card>
               <CardContent className="pt-6 space-y-4">

@@ -16,9 +16,15 @@ def get_db_connection():
     database_url = os.environ.get('DATABASE_URL')
     return psycopg2.connect(database_url, cursor_factory=RealDictCursor)
 
+def check_admin_auth(headers: Dict[str, Any]) -> bool:
+    admin_password = os.environ.get('ADMIN_PASSWORD', '')
+    provided_password = headers.get('X-Admin-Password', '')
+    return admin_password and provided_password == admin_password
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     query_params = event.get('queryStringParameters', {}) or {}
+    headers = event.get('headers', {}) or {}
     
     if method == 'OPTIONS':
         return {
@@ -26,7 +32,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Key',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Password',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -55,6 +61,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif method == 'PUT':
+                if not check_admin_auth(headers):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
                 body_data = json.loads(event.get('body', '{}'))
                 stream_url = body_data.get('url', '')
                 title = body_data.get('title', 'Прямая трансляция')
@@ -103,6 +120,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif method == 'POST':
+                if not check_admin_auth(headers):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
                 body_data = json.loads(event.get('body', '{}'))
                 
                 cur.execute('''
@@ -133,6 +161,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif method == 'DELETE':
+                if not check_admin_auth(headers):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
                 event_id = query_params.get('id')
                 if event_id:
                     cur.execute('DELETE FROM schedule_events WHERE id = %s', (event_id,))
@@ -167,6 +206,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif method == 'POST':
+                if not check_admin_auth(headers):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
                 body_data = json.loads(event.get('body', '{}'))
                 
                 cur.execute('''
@@ -193,6 +243,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             elif method == 'DELETE':
+                if not check_admin_auth(headers):
+                    return {
+                        'statusCode': 401,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Unauthorized'}),
+                        'isBase64Encoded': False
+                    }
+                
                 post_id = query_params.get('id')
                 if post_id:
                     cur.execute('DELETE FROM news_posts WHERE id = %s', (post_id,))
