@@ -170,8 +170,15 @@ const Index = () => {
       const channelName = newStreamUrl.split('kick.com/')[1]?.split('?')[0].split('/')[0];
       embedUrl = `https://player.kick.com/${channelName}?autoplay=true&muted=false&quality=auto`;
     } else if (newStreamUrl.includes('tach.id/')) {
-      const streamId = newStreamUrl.split('/').pop();
-      embedUrl = `https://tach.id/embed/stream/${streamId}`;
+      const parts = newStreamUrl.split('/');
+      const streamId = parts[parts.length - 1];
+      const username = newStreamUrl.includes('/s/') ? newStreamUrl.split('/s/')[1].split('/')[0] : '';
+      
+      if (username) {
+        embedUrl = `https://tach.id/embed/${username}/${streamId}`;
+      } else {
+        embedUrl = newStreamUrl;
+      }
     }
 
     try {
