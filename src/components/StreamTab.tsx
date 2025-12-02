@@ -73,21 +73,21 @@ const StreamTab = ({ currentStream }: StreamTabProps) => {
           sandbox="allow-same-origin allow-scripts allow-presentation allow-forms"
           referrerPolicy="no-referrer"
           title="Live Stream Player"
+          onContextMenu={(e: any) => e.preventDefault()}
         ></iframe>
-
-        <div 
-          className="absolute top-0 left-0 w-full z-20"
-          style={{ 
-            height: 'calc(100% - 40px)',
-            pointerEvents: 'auto',
-            background: 'transparent'
-          }}
-          onContextMenu={handleContextMenu}
-        ></div>
 
         <style dangerouslySetInnerHTML={{__html: `
           iframe {
             pointer-events: auto !important;
+          }
+          iframe::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
           }
           @media (max-width: 768px) {
             div:fullscreen,
