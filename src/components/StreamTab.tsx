@@ -76,29 +76,41 @@ const StreamTab = ({ currentStream }: StreamTabProps) => {
         ></iframe>
         
         <div 
-          className="absolute top-0 right-0 w-40 h-20 z-20 bg-black"
-          style={{ pointerEvents: 'none' }}
-        ></div>
-
-        <div 
           className="absolute inset-0 pointer-events-none"
           style={{ 
             background: 'linear-gradient(to bottom, transparent 0%, transparent 85%, rgba(0,0,0,0.3) 100%)'
           }}
         ></div>
 
+        <div 
+          className="absolute top-2 right-12 w-64 h-16 z-20 bg-black/90"
+          style={{ pointerEvents: 'none' }}
+        ></div>
+
         <style dangerouslySetInnerHTML={{__html: `
+          iframe {
+            pointer-events: auto !important;
+          }
           @media (max-width: 768px) {
             div:fullscreen,
             div:-webkit-full-screen,
-            div:-moz-full-screen {
+            div:-moz-full-screen,
+            div:-ms-fullscreen {
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
               width: 100vw !important;
               height: 100vh !important;
               border-radius: 0 !important;
+              z-index: 9999 !important;
             }
             div:fullscreen iframe,
             div:-webkit-full-screen iframe,
-            div:-moz-full-screen iframe {
+            div:-moz-full-screen iframe,
+            div:-ms-fullscreen iframe {
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
               width: 100% !important;
               height: 100% !important;
               border-radius: 0 !important;
