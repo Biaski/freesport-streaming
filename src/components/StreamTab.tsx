@@ -76,14 +76,7 @@ const StreamTab = ({ currentStream }: StreamTabProps) => {
         ></iframe>
         
         <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{ 
-            background: 'linear-gradient(to bottom, transparent 0%, transparent 85%, rgba(0,0,0,0.3) 100%)'
-          }}
-        ></div>
-
-        <div 
-          className="absolute top-2 right-12 w-64 h-16 z-20 bg-black/90"
+          className="absolute top-0 left-0 w-80 h-24 z-20 bg-black"
           style={{ pointerEvents: 'none' }}
         ></div>
 
