@@ -26,7 +26,7 @@ const StreamTab = ({ currentStream }: StreamTabProps) => {
     return false;
   };
 
-
+  const isGoodgameUrl = currentStream.url.includes('goodgame.ru');
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -43,16 +43,25 @@ const StreamTab = ({ currentStream }: StreamTabProps) => {
           </Badge>
         )}
 
-
-        
-        <iframe
-          src={currentStream.url}
-          className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          title="Live Stream Player"
-          onContextMenu={(e: any) => e.preventDefault()}
-        ></iframe>
+        {isGoodgameUrl ? (
+          <iframe
+            src={currentStream.url}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            title="Live Stream Player"
+            style={{ border: 'none' }}
+          ></iframe>
+        ) : (
+          <iframe
+            src={currentStream.url}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            title="Live Stream Player"
+            onContextMenu={(e: any) => e.preventDefault()}
+          ></iframe>
+        )}
 
         <style dangerouslySetInnerHTML={{__html: `
           iframe {

@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Get player HTML with channel parameter",
+      "method": "GET",
+      "path": "/?channel=Verloin",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing channel parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

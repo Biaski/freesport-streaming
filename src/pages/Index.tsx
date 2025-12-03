@@ -162,7 +162,7 @@ const Index = () => {
       const channelMatch = newStreamUrl.match(/goodgame\.ru\/([^/?]+)/);
       if (channelMatch) {
         const channelName = channelMatch[1];
-        embedUrl = `https://goodgame.ru/player?${channelName}#autoplay`;
+        embedUrl = `https://functions.poehali.dev/1c6c72e8-7a72-433e-bd18-5667031c9e3f?channel=${channelName}`;
       }
     } else if (newStreamUrl.includes('vk.com/video') || newStreamUrl.includes('vk.ru/video')) {
       const videoMatch = newStreamUrl.match(/video(-?\d+_\d+)/);
