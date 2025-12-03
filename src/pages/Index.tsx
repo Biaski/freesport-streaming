@@ -162,7 +162,7 @@ const Index = () => {
       const channelMatch = newStreamUrl.match(/goodgame\.ru\/([^/?]+)/);
       if (channelMatch) {
         const channelName = channelMatch[1];
-        embedUrl = `https://goodgame.ru/player?${channelName}`;
+        embedUrl = `https://goodgame.ru/player?${channelName}#autoplay`;
       }
     } else if (newStreamUrl.includes('vk.com/video') || newStreamUrl.includes('vk.ru/video')) {
       const videoMatch = newStreamUrl.match(/video(-?\d+_\d+)/);
