@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { useNavigate } from 'react-router-dom';
+import AdminLogin from '@/components/admin/AdminLogin';
+import AdminStreamSection from '@/components/admin/AdminStreamSection';
+import AdminScheduleSection from '@/components/admin/AdminScheduleSection';
+import AdminNewsSection from '@/components/admin/AdminNewsSection';
 
 const API_URL = 'https://functions.poehali.dev/b726b831-4bec-45c4-86a0-702fb2ab6218';
 
@@ -35,30 +37,13 @@ interface NewsPost {
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
   const [activeSection, setActiveSection] = useState<'stream' | 'schedule' | 'news'>('stream');
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Stream state
   const [currentStream, setCurrentStream] = useState<Stream | null>(null);
-  const [newStreamUrl, setNewStreamUrl] = useState('');
-  const [newStreamTitle, setNewStreamTitle] = useState('');
-  const [newStreamSport, setNewStreamSport] = useState('');
-
-  // Schedule state
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
-  const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventDate, setNewEventDate] = useState('');
-  const [newEventTime, setNewEventTime] = useState('');
-  const [newEventSport, setNewEventSport] = useState('');
-  const [newEventDesc, setNewEventDesc] = useState('');
-
-  // News state
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
-  const [newPostTitle, setNewPostTitle] = useState('');
-  const [newPostContent, setNewPostContent] = useState('');
-  const [newPostImage, setNewPostImage] = useState('');
 
   useEffect(() => {
     const savedPassword = localStorage.getItem('admin_password');
@@ -82,14 +67,13 @@ const Admin = () => {
     };
   };
 
-  const handleLogin = () => {
+  const handleLogin = (passwordInput: string) => {
     if (!passwordInput.trim()) {
       toast({ title: 'Ошибка', description: 'Введите пароль', variant: 'destructive' });
       return;
     }
     localStorage.setItem('admin_password', passwordInput);
     setIsAuthenticated(true);
-    setPasswordInput('');
     loadData();
     toast({ title: 'Успешно', description: 'Вы вошли в админ-панель' });
   };
@@ -106,8 +90,6 @@ const Admin = () => {
       const data = await response.json();
       if (data.stream) {
         setCurrentStream(data.stream);
-        setNewStreamTitle(data.stream.title);
-        setNewStreamSport(data.stream.sport || '');
       }
     } catch (error) {
       console.error('Ошибка загрузки трансляции:', error);
@@ -134,7 +116,7 @@ const Admin = () => {
     }
   };
 
-  const updateStream = async () => {
+  const updateStream = async (newStreamUrl: string, newStreamTitle: string, newStreamSport: string) => {
     if (!newStreamUrl.trim()) {
       toast({ title: 'Ошибка', description: 'Введите URL трансляции', variant: 'destructive' });
       return;
@@ -196,7 +178,6 @@ const Admin = () => {
       
       const data = await response.json();
       setCurrentStream(data.stream);
-      setNewStreamUrl('');
       
       toast({ title: 'Успешно', description: 'Трансляция обновлена' });
     } catch (error) {
@@ -204,8 +185,8 @@ const Admin = () => {
     }
   };
 
-  const addScheduleEvent = async () => {
-    if (!newEventTitle || !newEventDate || !newEventTime || !newEventSport) {
+  const addScheduleEvent = async (title: string, date: string, time: string, sport: string, desc: string) => {
+    if (!title || !date || !time || !sport) {
       toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
       return;
     }
@@ -215,11 +196,11 @@ const Admin = () => {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          title: newEventTitle,
-          event_date: newEventDate,
-          event_time: newEventTime,
-          sport: newEventSport,
-          description: newEventDesc
+          title,
+          event_date: date,
+          event_time: time,
+          sport,
+          description: desc
         })
       });
       
@@ -230,12 +211,6 @@ const Admin = () => {
       }
       
       await loadSchedule();
-      setNewEventTitle('');
-      setNewEventDate('');
-      setNewEventTime('');
-      setNewEventSport('');
-      setNewEventDesc('');
-      
       toast({ title: 'Успешно', description: 'Событие добавлено' });
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось добавить событие', variant: 'destructive' });
@@ -262,8 +237,8 @@ const Admin = () => {
     }
   };
 
-  const addNewsPost = async () => {
-    if (!newPostTitle || !newPostContent || !newPostImage) {
+  const addNewsPost = async (title: string, content: string, image: string) => {
+    if (!title || !content || !image) {
       toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
       return;
     }
@@ -273,9 +248,9 @@ const Admin = () => {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          title: newPostTitle,
-          content: newPostContent,
-          image_url: newPostImage
+          title,
+          content,
+          image_url: image
         })
       });
       
@@ -286,10 +261,6 @@ const Admin = () => {
       }
       
       await loadNews();
-      setNewPostTitle('');
-      setNewPostContent('');
-      setNewPostImage('');
-      
       toast({ title: 'Успешно', description: 'Новость добавлена' });
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось добавить новость', variant: 'destructive' });
@@ -317,28 +288,7 @@ const Admin = () => {
   };
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary/90 to-primary/80 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-          <div className="flex items-center justify-center mb-6">
-            <Icon name="Lock" size={48} className="text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-center mb-6">Админ-панель</h1>
-          <div className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Введите пароль"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-            />
-            <Button onClick={handleLogin} className="w-full">
-              Войти
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLogin onLogin={handleLogin} />;
   }
 
   return (
@@ -385,172 +335,23 @@ const Admin = () => {
         </div>
 
         {activeSection === 'stream' && (
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <h2 className="text-2xl font-bold mb-4">Управление трансляцией</h2>
-            
-            {currentStream && (
-              <div className="bg-secondary/10 p-4 rounded-lg mb-6">
-                <p className="text-sm text-gray-600 mb-2">Текущая трансляция:</p>
-                <p className="font-bold">{currentStream.title}</p>
-                <p className="text-sm text-gray-600">{currentStream.sport}</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">URL трансляции</label>
-                <Input
-                  placeholder="https://youtube.com/watch?v=..."
-                  value={newStreamUrl}
-                  onChange={(e) => setNewStreamUrl(e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Поддерживается: YouTube, Twitch, VK, OK, Goodgame, Kick, Tach
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Название</label>
-                <Input
-                  placeholder="Биатлон: Кубок мира"
-                  value={newStreamTitle}
-                  onChange={(e) => setNewStreamTitle(e.target.value)}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Вид спорта</label>
-                <Input
-                  placeholder="Биатлон"
-                  value={newStreamSport}
-                  onChange={(e) => setNewStreamSport(e.target.value)}
-                />
-              </div>
-              
-              <Button onClick={updateStream} className="w-full">
-                <Icon name="Upload" size={20} className="mr-2" />
-                Обновить трансляцию
-              </Button>
-            </div>
-          </div>
+          <AdminStreamSection currentStream={currentStream} onUpdate={updateStream} />
         )}
 
         {activeSection === 'schedule' && (
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <h2 className="text-2xl font-bold mb-4">Управление расписанием</h2>
-            
-            <div className="space-y-4 mb-6">
-              <Input
-                placeholder="Название события"
-                value={newEventTitle}
-                onChange={(e) => setNewEventTitle(e.target.value)}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  type="date"
-                  value={newEventDate}
-                  onChange={(e) => setNewEventDate(e.target.value)}
-                />
-                <Input
-                  type="time"
-                  value={newEventTime}
-                  onChange={(e) => setNewEventTime(e.target.value)}
-                />
-              </div>
-              <Input
-                placeholder="Вид спорта"
-                value={newEventSport}
-                onChange={(e) => setNewEventSport(e.target.value)}
-              />
-              <Textarea
-                placeholder="Описание (необязательно)"
-                value={newEventDesc}
-                onChange={(e) => setNewEventDesc(e.target.value)}
-              />
-              <Button onClick={addScheduleEvent} className="w-full">
-                <Icon name="Plus" size={20} className="mr-2" />
-                Добавить событие
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-bold mb-2">Список событий</h3>
-              {scheduleEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 bg-secondary/10 rounded-lg">
-                  <div>
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="text-sm text-gray-600">
-                      {event.event_date} в {event.event_time} • {event.sport}
-                    </p>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteScheduleEvent(event.id)}
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
-                </div>
-              ))}
-              {scheduleEvents.length === 0 && (
-                <p className="text-gray-500 text-center py-4">Нет событий</p>
-              )}
-            </div>
-          </div>
+          <AdminScheduleSection 
+            scheduleEvents={scheduleEvents}
+            onAdd={addScheduleEvent}
+            onDelete={deleteScheduleEvent}
+          />
         )}
 
         {activeSection === 'news' && (
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <h2 className="text-2xl font-bold mb-4">Управление новостями</h2>
-            
-            <div className="space-y-4 mb-6">
-              <Input
-                placeholder="Заголовок новости"
-                value={newPostTitle}
-                onChange={(e) => setNewPostTitle(e.target.value)}
-              />
-              <Textarea
-                placeholder="Текст новости"
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                rows={4}
-              />
-              <Input
-                placeholder="URL изображения"
-                value={newPostImage}
-                onChange={(e) => setNewPostImage(e.target.value)}
-              />
-              <Button onClick={addNewsPost} className="w-full">
-                <Icon name="Plus" size={20} className="mr-2" />
-                Добавить новость
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-bold mb-2">Список новостей</h3>
-              {newsPosts.map((post) => (
-                <div key={post.id} className="flex items-start justify-between p-3 bg-secondary/10 rounded-lg">
-                  <div className="flex-1">
-                    <p className="font-semibold">{post.title}</p>
-                    <p className="text-sm text-gray-600 line-clamp-2">{post.content}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(post.published_at).toLocaleDateString('ru-RU')}
-                    </p>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteNewsPost(post.id)}
-                  >
-                    <Icon name="Trash2" size={16} />
-                  </Button>
-                </div>
-              ))}
-              {newsPosts.length === 0 && (
-                <p className="text-gray-500 text-center py-4">Нет новостей</p>
-              )}
-            </div>
-          </div>
+          <AdminNewsSection 
+            newsPosts={newsPosts}
+            onAdd={addNewsPost}
+            onDelete={deleteNewsPost}
+          />
         )}
       </div>
     </div>
